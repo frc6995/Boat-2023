@@ -10,15 +10,34 @@ import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.sparkmax.SparkMax;
+
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.REVLibError;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
 import static frc.robot.Constants.JetConstants.*;
+import static frc.robot.util.sparkmax.SparkMax.check;
+import static frc.robot.util.sparkmax.SparkMax.config;
 
 import java.util.function.DoubleSupplier;
 public class JetS extends SubsystemBase {
 
-  private final Spark leftJet = new Spark(PWM_LEFT_JET);
-  private final Spark rightJet = new Spark(PWM_RIGHT_JET);
+  private final SparkMax leftJet = new SparkMax(CAN_ID_LEFT_JET, MotorType.kBrushed);
+  private final SparkMax rightJet = new SparkMax(CAN_ID_RIGHT_JET, MotorType.kBrushed);
   /** Creates a new JetS. */
-  public JetS() {}
+  public JetS() {
+    leftJet.withSettings(
+      check(spark->spark.setIdleMode(CANSparkMax.IdleMode.kBrake)),
+      check(spark->spark.setSmartCurrentLimit(SPARK_MAX_CURRENT_LIMIT)),
+      config(spark->spark.setInverted(true))
+    );
+
+    rightJet.withSettings(
+      check(spark->spark.setIdleMode(CANSparkMax.IdleMode.kBrake)),
+      check(spark->spark.setSmartCurrentLimit(SPARK_MAX_CURRENT_LIMIT))
+    );
+  }
 
   @Override
   public void periodic() {

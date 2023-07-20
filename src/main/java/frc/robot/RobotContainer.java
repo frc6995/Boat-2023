@@ -5,9 +5,11 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.ArmS;
 import frc.robot.subsystems.DrivebaseS;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.JetS;
+import frc.robot.util.sparkmax.SparkMax;
 import edu.wpi.first.wpilibj2.command.Command;
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -23,6 +25,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final DrivebaseS drivebaseS = new DrivebaseS();
   private final JetS jetS = new JetS();
+  private final ArmS armS = new ArmS();
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
@@ -32,11 +35,12 @@ public class RobotContainer {
   private Trigger waterModeTrigger = new Trigger(()->isWaterMode);
 
   private Command landWheelC = drivebaseS.driveLandC(
-    ()-> -m_driverController.getLeftY(),
+    ()-> m_driverController.getRightTriggerAxis()-m_driverController.getLeftTriggerAxis(),
     ()-> -m_driverController.getLeftX()
   );
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    SparkMax.burnFlashInSync();
     // Configure the trigger bindings
     configureBindings();
   }
@@ -51,14 +55,25 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
+    armS.setDefaultCommand(armS.manualC(m_driverController::getRightY));
     m_driverController.a().onTrue(
       runOnce(()->isWaterMode = !isWaterMode)
     );
+
+    m_driverController.b().toggleOnTrue(armS.positionC(()->0));
+    m_driverController.x().toggleOnTrue(armS.positionC(()->Math.PI/4));
+    drivebaseS.setDefaultCommand(drivebaseS.driveLandC(
+      ()-> m_driverController.getRightTriggerAxis()-m_driverController.getLeftTriggerAxis(),
+      ()-> -m_driverController.getLeftX()));
     waterModeTrigger.whileTrue(
       parallel(
         drivebaseS.driveLandC(()->0, ()->0),
+        // drivebaseS.driveLandC(
+        //   ()-> m_driverController.getRightTriggerAxis()-m_driverController.getLeftTriggerAxis(),
+        //   ()-> -m_driverController.getLeftX()
+        // ),
         jetS.driveLandC(
-          ()-> -m_driverController.getLeftY(),
+          ()-> m_driverController.getRightTriggerAxis()-m_driverController.getLeftTriggerAxis(),
           ()-> -m_driverController.getLeftX()
         )
       )

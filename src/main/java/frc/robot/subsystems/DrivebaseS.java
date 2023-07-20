@@ -4,32 +4,57 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive.WheelSpeeds;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.drive.DriveUtil;
+import frc.robot.util.sparkmax.SparkMax;
+
 import  static frc.robot.Constants.DrivebaseConstants.*;
+import static frc.robot.util.sparkmax.SparkMax.check;
+import static frc.robot.util.sparkmax.SparkMax.config;
+import static frc.robot.util.sparkmax.SparkMax.SparkMaxInitializers.*;
 
 import java.util.function.DoubleSupplier;
 
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.REVLibError;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-
 public class DrivebaseS extends SubsystemBase {
 
-  private CANSparkMax frontLeftMotor = new CANSparkMax(CAN_ID_FRONT_LEFT, MotorType.kBrushless);
-  private CANSparkMax frontRightMotor = new CANSparkMax(CAN_ID_FRONT_RIGHT, MotorType.kBrushless);
-  private CANSparkMax backLeftMotor = new CANSparkMax(CAN_ID_BACK_LEFT, MotorType.kBrushless);
-  private CANSparkMax backRightMotor = new CANSparkMax(CAN_ID_BACK_RIGHT, MotorType.kBrushless);
-
+  private SparkMax frontLeftMotor = new SparkMax(CAN_ID_FRONT_LEFT, MotorType.kBrushless);
+  private SparkMax frontRightMotor = new SparkMax(CAN_ID_FRONT_RIGHT, MotorType.kBrushless);
+  private SparkMax backLeftMotor = new SparkMax(CAN_ID_BACK_LEFT, MotorType.kBrushless);
+  private SparkMax backRightMotor = new SparkMax(CAN_ID_BACK_RIGHT, MotorType.kBrushless);
+  private SlewRateLimiter fwdBackSlewRate = new SlewRateLimiter(2);
   /** Creates a new DrivebaseS. */
   public DrivebaseS() {
-    configureC().schedule();
+    frontLeftMotor.withSettings(
+      brake(),
+      currentLimit(SPARK_MAX_CURRENT_LIMIT),
+      invert()
+    ).withFollower(
+      backLeftMotor.withSettings(
+        brake()
+      )
+    );
+
+    frontRightMotor.withSettings(
+      brake(),
+      currentLimit(SPARK_MAX_CURRENT_LIMIT)
+    ).withFollower(
+      backRightMotor.withSettings(
+        brake()
+      )
+    );
   }
 
   @Override
@@ -38,7 +63,12 @@ public class DrivebaseS extends SubsystemBase {
   }
 
   public void drive(double fwdBack, double turn) {
-    WheelSpeeds speeds = DifferentialDrive.curvatureDriveIK(fwdBack, turn, false);
+    fwdBack = MathUtil.applyDeadband(fwdBack, 0.05);
+    turn = MathUtil.applyDeadband(turn, 0.05);
+    fwdBack *= 0.5;
+    fwdBack = fwdBackSlewRate.calculate(fwdBack);
+    
+    WheelSpeeds speeds = DriveUtil.curvatureDriveIK(fwdBack, turn * 2, false);
     SmartDashboard.putNumber("left", speeds.left);
     frontLeftMotor.setVoltage(speeds.left * 12);
     frontRightMotor.setVoltage(speeds.right * 12);
@@ -50,37 +80,5 @@ public class DrivebaseS extends SubsystemBase {
         drive(fwdBack.getAsDouble(), turn.getAsDouble());
       }
     );
-  }
-
-  private Command configureC() {
-    return sequence(
-      runOnce(()->{
-        frontLeftMotor.restoreFactoryDefaults();
-        frontRightMotor.restoreFactoryDefaults();
-        backLeftMotor.restoreFactoryDefaults();
-        backRightMotor.restoreFactoryDefaults();
-      }),
-      waitSeconds(2),
-      runOnce(()->{
-          backLeftMotor.follow(frontLeftMotor);
-          backRightMotor.follow(frontRightMotor);
-
-          frontRightMotor.setInverted(true);
-
-          frontLeftMotor.setSmartCurrentLimit(30);
-          frontRightMotor.setSmartCurrentLimit(30);
-          frontLeftMotor.setIdleMode(IdleMode.kBrake);
-          frontLeftMotor.setIdleMode(IdleMode.kBrake);
-      }),
-      waitSeconds(2),
-      runOnce(()->{
-        frontLeftMotor.burnFlash();
-        frontRightMotor.burnFlash();
-        backLeftMotor.burnFlash();
-        backRightMotor.burnFlash();
-      }))
-      .ignoringDisable(true)
-    ;
-
   }
 }

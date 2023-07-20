@@ -22,9 +22,19 @@ public final class Constants {
     public static final int CAN_ID_FRONT_RIGHT = 11;
     public static final int CAN_ID_BACK_LEFT = 12;
     public static final int CAN_ID_BACK_RIGHT = 13;
+    public static final int SPARK_MAX_CURRENT_LIMIT = 30;
   }
   public static class JetConstants {
-    public static final int PWM_LEFT_JET = 0;
-    public static final int PWM_RIGHT_JET = 1;
+    public static final int CAN_ID_LEFT_JET = 20;
+    public static final int CAN_ID_RIGHT_JET = 21;
+    public static final int SPARK_MAX_CURRENT_LIMIT = 30;
+  }
+
+  public static class ArmConstants {
+    public static final int CAN_ID_FRONT = 31;
+    public static final int CAN_ID_BACK = 33;
+    public static final int SPARK_MAX_CURRENT_LIMIT = 40;
+    public static final double FORWARD_SOFT_LIMIT = Math.PI / 2;
+    public static final double BACKWARD_SOFT_LIMIT = 0;
   }
 }

@@ -62,13 +62,18 @@ public class DrivebaseS extends SubsystemBase {
     // This method will be called once per scheduler run
   }
 
-  public void drive(double fwdBack, double turn) {
+  public void drive(double fwdBack, double turn, boolean arcade) {
     fwdBack = MathUtil.applyDeadband(fwdBack, 0.05);
     turn = MathUtil.applyDeadband(turn, 0.05);
-    fwdBack *= 0.5;
+    fwdBack *= 1;
     fwdBack = fwdBackSlewRate.calculate(fwdBack);
     
-    WheelSpeeds speeds = DriveUtil.curvatureDriveIK(fwdBack, turn * 2, false);
+    WheelSpeeds speeds;
+    if (!arcade) {
+      speeds = DriveUtil.curvatureDriveIK(fwdBack, turn * 2, false);
+    } else {
+     speeds = DifferentialDrive.arcadeDriveIK(fwdBack, turn, false);
+    }
     SmartDashboard.putNumber("left", speeds.left);
     frontLeftMotor.setVoltage(speeds.left * 12);
     frontRightMotor.setVoltage(speeds.right * 12);
@@ -77,7 +82,15 @@ public class DrivebaseS extends SubsystemBase {
   public Command driveLandC(DoubleSupplier fwdBack, DoubleSupplier turn) {
     return this.run(
       ()->{
-        drive(fwdBack.getAsDouble(), turn.getAsDouble());
+        drive(fwdBack.getAsDouble(), turn.getAsDouble(), false);
+      }
+    );
+  }
+
+  public Command driveWaterC(DoubleSupplier fwdBack, DoubleSupplier turn) {
+    return this.run(
+      ()->{
+        drive(fwdBack.getAsDouble(), turn.getAsDouble(), true);
       }
     );
   }

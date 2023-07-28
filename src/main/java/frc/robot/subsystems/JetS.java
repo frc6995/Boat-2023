@@ -29,13 +29,13 @@ public class JetS extends SubsystemBase {
   public JetS() {
     leftJet.withSettings(
       check(spark->spark.setIdleMode(CANSparkMax.IdleMode.kBrake)),
-      check(spark->spark.setSmartCurrentLimit(SPARK_MAX_CURRENT_LIMIT)),
-      config(spark->spark.setInverted(true))
+      check(spark->spark.setSmartCurrentLimit(SPARK_MAX_CURRENT_LIMIT))
     );
 
     rightJet.withSettings(
       check(spark->spark.setIdleMode(CANSparkMax.IdleMode.kBrake)),
-      check(spark->spark.setSmartCurrentLimit(SPARK_MAX_CURRENT_LIMIT))
+      check(spark->spark.setSmartCurrentLimit(SPARK_MAX_CURRENT_LIMIT)),
+      config(spark->spark.setInverted(true))
     );
   }
 

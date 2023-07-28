@@ -25,8 +25,8 @@ public final class Constants {
     public static final int SPARK_MAX_CURRENT_LIMIT = 30;
   }
   public static class JetConstants {
-    public static final int CAN_ID_LEFT_JET = 20;
-    public static final int CAN_ID_RIGHT_JET = 21;
+    public static final int CAN_ID_LEFT_JET = 21;
+    public static final int CAN_ID_RIGHT_JET = 20;
     public static final int SPARK_MAX_CURRENT_LIMIT = 30;
   }
 

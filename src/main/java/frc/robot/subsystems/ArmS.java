@@ -20,6 +20,7 @@ import static frc.robot.util.sparkmax.SparkMax.check;
 import static frc.robot.util.sparkmax.SparkMax.config;
 import static frc.robot.util.sparkmax.SparkMax.SparkMaxInitializers.*;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import static edu.wpi.first.wpilibj2.command.Commands.*;
@@ -38,9 +39,10 @@ public class ArmS extends SubsystemBase {
   private SparkMax backRightMotor = new SparkMax(CAN_ID_BACK, MotorType.kBrushless);
   private SparkMaxAbsoluteEncoder m_encoder = frontRightMotor.getAbsoluteEncoder(Type.kDutyCycle);
   private SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(0.1, 0.1);
-  private PIDController m_pidController = new PIDController(0.9, 0, 0);
+  private PIDController m_pidController = new PIDController(2, 0, 0);
+  private BooleanSupplier isWaterMode = ()->false;
   /** Creates a new DrivebaseS. */
-  public ArmS() {
+  public ArmS(BooleanSupplier isWaterMode) {
 
     frontRightMotor.withSettings(
       brake(),
@@ -52,6 +54,7 @@ public class ArmS extends SubsystemBase {
         brake()
       )
     );
+    this.isWaterMode = isWaterMode;
   }
 
   @Override
@@ -63,7 +66,7 @@ public class ArmS extends SubsystemBase {
     // This method will be called once per scheduler run
   }
   private double getHoldingVoltage() {
-    return 0.75 * Math.cos(m_encoder.getPosition());
+    return 0.6 * Math.cos(m_encoder.getPosition());
   }
   /**
    * Returns the angle from the absolute encoder. If the arm is below horizontal,
@@ -79,13 +82,18 @@ public class ArmS extends SubsystemBase {
 
   private void setVoltage(double volts) {
     SmartDashboard.putNumber("inVolts", volts);
+    if (getAngle() > FORWARD_SOFT_LIMIT) {volts = Math.min(volts, 0);}
+    else if (getAngle() < getBackSoftLimit()) {volts = Math.max(volts, 0);}
     double voltage = volts + getHoldingVoltage();
-    if (getAngle() > FORWARD_SOFT_LIMIT) {voltage = Math.min(voltage, 0);}
-    else if (getAngle() < BACKWARD_SOFT_LIMIT) {voltage = Math.max(voltage, 0);}
+    double backSoftLimit = isWaterMode.getAsBoolean() ? -Math.PI/4 : BACKWARD_SOFT_LIMIT;
+
     SmartDashboard.putNumber("armVolts", voltage);
     frontRightMotor.setVoltage(voltage);
   }
-
+  private double getBackSoftLimit() {
+    double backSoftLimit = isWaterMode.getAsBoolean() ? -Math.PI/4 : BACKWARD_SOFT_LIMIT;
+    return backSoftLimit;
+  }
   private void setPosition(double position) {
     setVoltage(m_pidController.calculate( getAngle(), position));
   } 
@@ -98,7 +106,7 @@ public class ArmS extends SubsystemBase {
 
   public Command positionC(DoubleSupplier position) {
     return run(()->{
-        setPosition(MathUtil.clamp(position.getAsDouble(), BACKWARD_SOFT_LIMIT, FORWARD_SOFT_LIMIT));
+        setPosition(MathUtil.clamp(position.getAsDouble(), getBackSoftLimit(), FORWARD_SOFT_LIMIT));
     });
   }
 
